@@ -2,6 +2,8 @@
 test_deps = [
     dependency('gtest', required: true),
     dependency('gtest_main', required: true),
+    dependency('gmock', required: true),
+    libspdm_dep,
 ]
 
 tests = [
