@@ -3,10 +3,13 @@
 
 #pragma once
 
+#include "component_integrity_dbus.hpp"
 #include "spdm_discovery.hpp"
+#include "trusted_component_dbus.hpp"
 
 #include <sdbusplus/async.hpp>
 
+#include <memory>
 #include <string>
 
 namespace spdm
@@ -15,7 +18,8 @@ namespace spdm
 /**
  * @brief D-Bus responder object for a discovered SPDM device.
  * @details Owns the ComponentIntegrity and TrustedComponent D-Bus interface
- *          objects that represent the device on the bus.
+ *          objects that represent the device on the bus, and runs SPDM
+ *          attestation asynchronously after construction.
  */
 class SPDMDBusResponder
 {
@@ -35,6 +39,7 @@ class SPDMDBusResponder
                                const ResponderInfo& responderInfo);
 
     ~SPDMDBusResponder() = default;
+
     /**
      * @brief Perform async operations for this responder
      * @details Contains the async logic for device connection and attestation.
@@ -44,11 +49,11 @@ class SPDMDBusResponder
     auto run() -> sdbusplus::async::task<>;
 
   private:
-    /** @brief Reference to the async context for D-Bus operations */
-    [[maybe_unused]] sdbusplus::async::context& asyncCtx;
-
-    /** @brief Device information from discovery */
+    sdbusplus::async::context& asyncCtx;
     ResponderInfo responderInfo;
+    std::string deviceName;
+    std::unique_ptr<ComponentIntegrity> componentIntegrity;
+    std::unique_ptr<TrustedComponent> trustedComponent;
 };
 
 } // namespace spdm
