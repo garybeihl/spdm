@@ -43,6 +43,10 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
         "/xyz/openbmc_project/ComponentIntegrity/" + deviceName;
     componentIntegrity =
         std::make_unique<ComponentIntegrity>(asyncCtx, componentIntegrityPath);
+    if (transport)
+    {
+        componentIntegrity->setTransport(transport);
+    }
 
     std::string trustedComponentPath =
         "/xyz/openbmc_project/TrustedComponent/" + deviceName;
@@ -131,7 +135,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
 
     // Step 4: GET_MEASUREMENTS — request total measurement count.
     // A future patch will extend this to retrieve specific records once the
-    // SignedMeasurements D-Bus surface lands (Gerrit 77349a9 follow-on).
+    // SignedMeasurements D-Bus surface lands.
     uint32_t measurementRecordLength = 0;
     std::vector<uint8_t> measurementRecord(LIBSPDM_MAX_MEASUREMENT_RECORD_SIZE);
     uint8_t numberOfBlocks = 0;
@@ -150,9 +154,6 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
 
     // Step 5: Update TrustedComponent D-Bus state.
     // MCTP responder = Integrated, TCP responder = Discrete.
-    // ComponentIntegrity property updates (responder_verification_status,
-    // type_version) are deferred until the Digest/Certificate D-Bus
-    // commits are integrated.
     std::string componentType = "Integrated";
     std::visit(
         [&componentType](const auto& info) {
