@@ -13,6 +13,7 @@ common_src = [
     'test_mctp_transport_discovery.cpp',
     'test_mctp_helper.cpp',
     'test_component_integrity.cpp',
+    'test_certificate_dbus.cpp',
     'mock_libspdm.cpp',
     '../requester/mctp_transport_discovery.cpp',
     '../requester/spdm_discovery.cpp',
@@ -20,6 +21,7 @@ common_src = [
     '../requester/libspdm_mctp_transport.cpp',
     '../requester/spdm_device_secret_lib_stub.cpp',
     '../requester/component_integrity_dbus.cpp',
+    '../requester/certificate_dbus.cpp',
 ]
 
 # Define test executables
