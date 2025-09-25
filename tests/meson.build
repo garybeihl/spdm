@@ -31,7 +31,12 @@ common_src = [
 ]
 
 # Define test executables
-tests = ['mctp_transport_discovery', 'mctp_helper', 'component_integrity']
+tests = [
+    'mctp_transport_discovery',
+    'mctp_helper',
+    'component_integrity',
+    'certificate_dbus',
+]
 
 # Build and register each test
 >>>>>>> 7f03cd4 (spdmd: Implement Digest)
