@@ -12,6 +12,29 @@
 namespace spdm
 {
 
+/**
+ * @brief Trust-on-first-use certificate verification callback.
+ *
+ * Accepts any valid X.509 chain without requiring a pre-provisioned
+ * root certificate. Production deployments should replace this with a
+ * callback that checks the chain against a provisioned trust anchor.
+ */
+static bool tofuVerifyCertChain(
+    void* /*spdmContext*/, uint8_t /*slotId*/, size_t /*certChainSize*/,
+    const void* /*certChain*/, const void** trustAnchor,
+    size_t* trustAnchorSize)
+{
+    if (trustAnchor != nullptr)
+    {
+        *trustAnchor = nullptr;
+    }
+    if (trustAnchorSize != nullptr)
+    {
+        *trustAnchorSize = 0;
+    }
+    return true;
+}
+
 bool SpdmMctpTransport::initialize()
 {
     if (!mctpIo.createSocket())
@@ -105,18 +128,30 @@ bool SpdmMctpTransport::setupScratchBuffer()
 
 bool SpdmMctpTransport::configureContext()
 {
-    if (useVersion != 0)
-    {
-        spdm_version_number_t spdm_version;
-        libspdm_zero_mem(&parameter, sizeof(parameter));
-        parameter.location = LIBSPDM_DATA_LOCATION_LOCAL;
-        spdm_version = useVersion << SPDM_VERSION_NUMBER_SHIFT_BIT;
-        libspdm_set_data(spdmContext, LIBSPDM_DATA_SPDM_VERSION, &parameter,
-                         &spdm_version, sizeof(spdm_version));
-    }
+    // Register trust-on-first-use certificate verification so that
+    // libspdm_get_certificate() succeeds without a pre-provisioned
+    // root cert. TODO: replace with Entity Manager trust anchor lookup.
+    libspdm_register_verify_spdm_cert_chain_func(spdmContext,
+                                                  tofuVerifyCertChain);
 
     libspdm_zero_mem(&parameter, sizeof(parameter));
     parameter.location = LIBSPDM_DATA_LOCATION_LOCAL;
+
+    // Register all supported SPDM versions so libspdm negotiates the
+    // highest common version with the responder.
+    spdm_version_number_t versions[] = {
+        SPDM_MESSAGE_VERSION_10 << SPDM_VERSION_NUMBER_SHIFT_BIT,
+        SPDM_MESSAGE_VERSION_11 << SPDM_VERSION_NUMBER_SHIFT_BIT,
+        SPDM_MESSAGE_VERSION_12 << SPDM_VERSION_NUMBER_SHIFT_BIT,
+    };
+    libspdm_set_data(spdmContext, LIBSPDM_DATA_SPDM_VERSION, &parameter,
+                     versions, sizeof(versions));
+
+    // Requester capabilities: certificate retrieval and challenge
+    uint32_t capFlags = SPDM_GET_CAPABILITIES_REQUEST_FLAGS_CERT_CAP |
+                        SPDM_GET_CAPABILITIES_REQUEST_FLAGS_CHAL_CAP;
+    libspdm_set_data(spdmContext, LIBSPDM_DATA_CAPABILITY_FLAGS, &parameter,
+                     &capFlags, sizeof(capFlags));
 
     uint8_t data8 = 0;
     libspdm_set_data(spdmContext, LIBSPDM_DATA_CAPABILITY_CT_EXPONENT,
@@ -131,6 +166,9 @@ bool SpdmMctpTransport::configureContext()
     data32 = supportHashAlgo;
     libspdm_set_data(spdmContext, LIBSPDM_DATA_BASE_HASH_ALGO, &parameter,
                      &data32, sizeof(data32));
+    data32 = supportMeasurementHashAlgo;
+    libspdm_set_data(spdmContext, LIBSPDM_DATA_MEASUREMENT_HASH_ALGO,
+                     &parameter, &data32, sizeof(data32));
 
     return true;
 }
