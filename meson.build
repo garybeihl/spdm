@@ -19,29 +19,48 @@ systemd_dep = dependency('systemd')
 # Try to find libspdm using pkg-config first
 libspdm_dep = dependency('libspdm', required: false)
 
-# If pkg-config doesn't work, try to find it manually
+# If pkg-config doesn't work, find individual libspdm static libraries.
+# Yocto installs them as libspdm_*_lib.a (e.g. libspdm_common_lib.a).
 if not libspdm_dep.found()
-    libspdm_lib = meson.get_compiler('cpp').find_library('spdm', required: false)
-    libspdm_platform_lib = meson.get_compiler('cpp').find_library(
-        'spdm_platform',
-        required: false,
-    )
-    libspdm_crypto_lib = meson.get_compiler('cpp').find_library(
-        'spdm_crypto',
-        required: false,
-    )
+    cpp = meson.get_compiler('cpp')
+    libspdm_common = cpp.find_library('spdm_common_lib', required: false)
+    libspdm_requester = cpp.find_library('spdm_requester_lib', required: false)
+    libspdm_transport_mctp = cpp.find_library('spdm_transport_mctp_lib', required: false)
+    libspdm_crypt = cpp.find_library('spdm_crypt_lib', required: false)
+    libspdm_crypt_ext = cpp.find_library('spdm_crypt_ext_lib', required: false)
+    libspdm_secured_message = cpp.find_library('spdm_secured_message_lib', required: false)
+    libcryptlib_openssl = cpp.find_library('cryptlib_openssl', required: false)
+    libmemlib = cpp.find_library('memlib', required: false)
+    libmalloclib = cpp.find_library('malloclib', required: false)
+    librnglib = cpp.find_library('rnglib', required: false)
+    libplatform = cpp.find_library('platform_lib', required: false)
+    libdebuglib = cpp.find_library('debuglib', required: false)
 
-    if libspdm_lib.found() and libspdm_platform_lib.found() and libspdm_crypto_lib.found()
+    libspdm_includedir = get_option('libspdm-includedir')
+    if libspdm_includedir == ''
+        libspdm_includedir = '/usr/include/libspdm'
+    endif
+
+    openssl_dep = dependency('openssl')
+
+    if libspdm_common.found() and libspdm_requester.found()
         libspdm_dep = declare_dependency(
             dependencies: [
-                libspdm_lib,
-                libspdm_platform_lib,
-                libspdm_crypto_lib,
+                libspdm_common,
+                libspdm_requester,
+                libspdm_transport_mctp,
+                libspdm_crypt,
+                libspdm_crypt_ext,
+                libspdm_secured_message,
+                libcryptlib_openssl,
+                libmemlib,
+                libmalloclib,
+                librnglib,
+                libplatform,
+                libdebuglib,
+                openssl_dep,
             ],
-            include_directories: include_directories(
-                '/usr/local/include/libspdm',
-                '/usr/local/include/libspdm/include',
-            ),
+            compile_args: ['-isystem', libspdm_includedir],
         )
     else
         error('libspdm not found. Please ensure libspdm is installed.')
