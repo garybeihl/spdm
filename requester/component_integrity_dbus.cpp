@@ -409,13 +409,23 @@ auto ComponentIntegrity::method_call(
         co_return std::make_tuple(objectPath, hashAlgoStr, certPem, signedMeas,
                                   signAlgoStr, versionStr);
     }
+    catch (const sdbusplus::exception::exception&)
+    {
+        // Already a proper D-Bus error type (e.g. InvalidArgument from
+        // validateMeasurementIndices). Let it propagate to the caller so
+        // bmcweb can map it to the right Redfish error response.
+        throw;
+    }
     catch (const std::exception& e)
     {
+        // Generic failure (libspdm error, network failure, etc.).
+        // Convert to InternalFailure so the D-Bus method call surfaces
+        // as an error rather than HTTP 200 with empty fields. Without
+        // this, libspdm errors are silently swallowed and clients see
+        // a successful response with empty SignedMeasurements.
         lg2::error("SPDM Get Signed Measurements FAILED: {ERROR}", "ERROR", e);
-        // Return empty tuple on error
-        co_return std::make_tuple(
-            sdbusplus::message::object_path(path), std::string(""),
-            std::string(""), std::string(""), std::string(""), type_version());
+        using namespace sdbusplus::xyz::openbmc_project::Common::Error;
+        throw InternalFailure();
     }
 }
 
