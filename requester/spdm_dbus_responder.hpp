@@ -4,11 +4,13 @@
 #pragma once
 
 #include "component_integrity_dbus.hpp"
+#include "libspdm_transport.hpp"
 #include "spdm_discovery.hpp"
 #include "trusted_component_dbus.hpp"
 
 #include <sdbusplus/async.hpp>
 
+#include <memory>
 #include <string>
 
 namespace spdm
@@ -33,6 +35,21 @@ class SPDMDBusResponder
 
     virtual ~SPDMDBusResponder() = default;
 
+    /**
+     * @brief Perform eager attestation on the device.
+     *
+     * Initializes the SPDM transport, then runs:
+     *   1. VCA (GET_VERSION + GET_CAPABILITIES + NEGOTIATE_ALGORITHMS)
+     *   2. GET_DIGESTS
+     *   3. GET_CERTIFICATE
+     *
+     * Updates D-Bus properties with the negotiated SPDM version and
+     * sets VerificationStatus to Success or Failed.
+     *
+     * @return true if attestation passed, false otherwise
+     */
+    bool performEagerAttestation();
+
     /** @brief Device name */
     std::string deviceName;
 
@@ -41,6 +58,10 @@ class SPDMDBusResponder
 
     std::unique_ptr<ComponentIntegrity> componentIntegrity;
     std::unique_ptr<TrustedComponent> trustedComponent;
+
+  private:
+    /** @brief SPDM transport for this device */
+    std::shared_ptr<SpdmTransport> transport;
 };
 
 } // namespace spdm
