@@ -270,6 +270,17 @@ class MctpIoClass : public IOClass
             return false;
         }
 
+        // Set receive timeout so recvfrom() doesn't block forever when a
+        // device is unreachable or disconnects mid-flow. Without this,
+        // libspdm has no way to give up on a non-responsive device.
+        struct timeval tv = {};
+        tv.tv_sec = 10;
+        if (setsockopt(socketFd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+        {
+            lg2::warning("Failed to set MCTP socket receive timeout (fd={FD})",
+                         "FD", socketFd);
+        }
+
         return true;
     }
 
