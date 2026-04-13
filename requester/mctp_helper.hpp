@@ -243,16 +243,19 @@ class MctpIoClass : public IOClass
     }
 
     /**
-     * @brief Creates a socket for MCTP communication in in-kernel mode.
+     * @brief Creates a non-listening AF_MCTP socket for SPDM communication.
      *
-     * This function creates a socket using the MCTP protocol and binds it to
-     * a specified address. If the socket creation or binding fails, it logs
-     * the error and returns false.
+     * spdmd is a pure synchronous requester — it sends a request with
+     * sendto() and blocks on recvfrom() for the response. No bind() is
+     * needed because we never listen for unsolicited messages (no
+     * KEY_UPDATE, HEARTBEAT, or END_SESSION support).
      *
-     * @return true if the socket is successfully created and bound, false
-     * otherwise.
+     * Without bind(), each MctpIoClass instance owns an ephemeral source
+     * address, so multiple sockets (one per discovered device) can coexist
+     * without colliding on the wildcard (ANY,ANY,SPDM,OWNER) tuple.
+     *
+     * @return true if the socket is created successfully, false otherwise.
      */
-
     bool createSocket()
     {
         if (isSocketOpen())
@@ -264,24 +267,6 @@ class MctpIoClass : public IOClass
         if (socketFd < 0)
         {
             lg2::error("Failed to create MCTP socket");
-            return false;
-        }
-
-        struct sockaddr_mctp addr;
-        std::memset(&addr, 0, sizeof(addr));
-        addr.smctp_family = AF_MCTP;
-        addr.smctp_network = MCTP_NET_ANY;
-        addr.smctp_addr.s_addr = MCTP_ADDR_ANY;
-        addr.smctp_type = MCTP_TYPE_SPDM;
-        addr.smctp_tag = MCTP_TAG_OWNER;
-
-        int rc = bind(socketFd, reinterpret_cast<struct sockaddr*>(&addr),
-                      sizeof(addr));
-        if (rc < 0)
-        {
-            lg2::error("Failed to bind MCTP socket (fd={FD})", "FD", socketFd);
-            close(socketFd);
-            socketFd = -1;
             return false;
         }
 
