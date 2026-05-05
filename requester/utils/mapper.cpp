@@ -20,8 +20,12 @@ auto by_interface(sdbusplus::async::context& ctx, std::string interface)
 {
     using Mapper = sdbusplus::client::xyz::openbmc_project::ObjectMapper<>;
 
+    using GetSubTreeReturn =
+        std::map<std::string,
+                 std::map<std::string, std::vector<std::string>>>;
+
     auto objects = co_await [&ctx, interface]()
-        -> sdbusplus::async::task<Mapper::get_sub_tree_t::return_type> {
+        -> sdbusplus::async::task<GetSubTreeReturn> {
         try
         {
             co_return co_await Mapper(ctx)
