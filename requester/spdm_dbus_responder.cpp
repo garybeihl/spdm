@@ -18,6 +18,8 @@ extern "C"
 #include <phosphor-logging/lg2.hpp>
 #include <xyz/openbmc_project/Attestation/IdentityAuthentication/common.hpp>
 
+#include <algorithm>
+
 PHOSPHOR_LOG2_USING;
 
 namespace spdm
@@ -37,7 +39,17 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
             }
             else
             {
+                // D-Bus object paths cannot contain dots, so sanitize the
+                // IP address before using it as a path component. Append
+                // the port to disambiguate multiple responders at the
+                // same address. Example:
+                //   ipAddr = "10.0.2.2", port = 2323
+                //     -> deviceName = "10_0_2_2_2323"
+                //     -> path = "/xyz/openbmc_project/SPDM/10_0_2_2_2323"
                 deviceName = responder.ipAddr;
+                std::replace(deviceName.begin(), deviceName.end(), '.', '_');
+                std::replace(deviceName.begin(), deviceName.end(), ':', '_');
+                deviceName += "_" + std::to_string(responder.port);
             }
         },
         responderInfo.info);
