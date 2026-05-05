@@ -4,6 +4,7 @@
 #include "spdm_dbus_responder.hpp"
 
 #include "libspdm_mctp_transport.hpp"
+#include "libspdm_tcp_transport.hpp"
 #include "spdmd.hpp"
 
 extern "C"
@@ -51,6 +52,12 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
             if constexpr (std::is_same_v<T, MctpResponderInfo>)
             {
                 transport = std::make_shared<SpdmMctpTransport>(info.eid);
+                componentIntegrity->setTransport(transport);
+            }
+            else if constexpr (std::is_same_v<T, TcpResponderInfo>)
+            {
+                transport = std::make_shared<SpdmTcpTransport>(
+                    info.ipAddr, static_cast<uint16_t>(info.port));
                 componentIntegrity->setTransport(transport);
             }
         },
