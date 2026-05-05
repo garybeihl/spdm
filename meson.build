@@ -26,6 +26,7 @@ if not libspdm_dep.found()
     libspdm_common = cpp.find_library('spdm_common_lib', required: false)
     libspdm_requester = cpp.find_library('spdm_requester_lib', required: false)
     libspdm_transport_mctp = cpp.find_library('spdm_transport_mctp_lib', required: false)
+    libspdm_transport_tcp = cpp.find_library('spdm_transport_tcp_lib', required: false)
     libspdm_crypt = cpp.find_library('spdm_crypt_lib', required: false)
     libspdm_crypt_ext = cpp.find_library('spdm_crypt_ext_lib', required: false)
     libspdm_secured_message = cpp.find_library('spdm_secured_message_lib', required: false)
@@ -49,6 +50,7 @@ if not libspdm_dep.found()
                 libspdm_common,
                 libspdm_requester,
                 libspdm_transport_mctp,
+                libspdm_transport_tcp,
                 libspdm_crypt,
                 libspdm_crypt_ext,
                 libspdm_secured_message,
@@ -87,7 +89,6 @@ spdmd_src = [
     'requester/spdm_device_secret_lib_stub.cpp',
     'requester/libspdm_mctp_transport.cpp',
     'requester/libspdm_tcp_transport.cpp',
-    'requester/tcp_event_handler.cpp',
     'requester/certificate_dbus.cpp',
 ]
 
