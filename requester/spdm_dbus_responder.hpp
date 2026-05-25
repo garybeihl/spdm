@@ -4,6 +4,7 @@
 #pragma once
 
 #include "component_integrity_dbus.hpp"
+#include "libspdm_transport.hpp"
 #include "spdm_discovery.hpp"
 #include "trusted_component_dbus.hpp"
 
@@ -18,8 +19,9 @@ namespace spdm
 /**
  * @brief D-Bus responder object for a discovered SPDM device.
  * @details Owns the ComponentIntegrity and TrustedComponent D-Bus interface
- *          objects that represent the device on the bus, and runs SPDM
- *          attestation asynchronously after construction.
+ *          objects that represent the device on the bus, owns the SPDM
+ *          transport for the device, and runs SPDM attestation
+ *          asynchronously after construction.
  */
 class SPDMDBusResponder
 {
@@ -42,8 +44,12 @@ class SPDMDBusResponder
 
     /**
      * @brief Perform async operations for this responder
-     * @details Contains the async logic for device connection and attestation.
-     *          The manager is responsible for spawning this coroutine.
+     * @details Drives the SPDM attestation flow: transport init + VCA,
+     *          GET_DIGESTS, GET_CERTIFICATE, CHALLENGE, GET_MEASUREMENTS,
+     *          then updates TrustedComponent D-Bus state. The manager is
+     *          responsible for spawning this coroutine; one is spawned per
+     *          discovered device so multiple devices' run() coroutines
+     *          execute concurrently on the manager's async_scope.
      * @return Async task for coroutine execution
      */
     auto run() -> sdbusplus::async::task<>;
@@ -54,6 +60,7 @@ class SPDMDBusResponder
     std::string deviceName;
     std::unique_ptr<ComponentIntegrity> componentIntegrity;
     std::unique_ptr<TrustedComponent> trustedComponent;
+    std::shared_ptr<SpdmTransport> transport;
 };
 
 } // namespace spdm
