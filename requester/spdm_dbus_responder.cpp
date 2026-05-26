@@ -45,7 +45,7 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
         responderInfo.info);
 
     std::string componentIntegrityPath =
-        "/xyz/openbmc_project/ComponentIntegrity/" + deviceName;
+        "/xyz/openbmc_project/component_integrity/" + deviceName;
     componentIntegrity =
         std::make_unique<ComponentIntegrity>(asyncCtx, componentIntegrityPath);
     if (transport)
@@ -54,7 +54,7 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
     }
 
     std::string trustedComponentPath =
-        "/xyz/openbmc_project/TrustedComponent/" + deviceName;
+        "/xyz/openbmc_project/inventory/trusted_component/" + deviceName;
     trustedComponent = std::make_unique<TrustedComponent>(asyncCtx.get_bus(),
                                                           trustedComponentPath);
 
