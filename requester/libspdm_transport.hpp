@@ -57,7 +57,10 @@ class SpdmTransport
     }
     uint8_t sendReceiveBuffer[LIBSPDM_MAX_SENDER_RECEIVER_BUFFER_SIZE];
     bool sendReceiveBufferAcquired = false;
-    uint8_t useVersion = SPDM_MESSAGE_VERSION_11;
+    // 0 = let libspdm negotiate the highest mutually-supported SPDM version.
+    // Pinning to a specific version breaks heterogeneous deployments where a
+    // responder advertises a wider or narrower range than this requester.
+    uint8_t useVersion = 0;
     uint32_t useRequesterCapabilityFlags = 0;
     uint8_t useReqSlotId = 0xFF;
     uint32_t useCapabilityFlags = 0;
