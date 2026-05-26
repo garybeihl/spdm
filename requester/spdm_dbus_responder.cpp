@@ -164,28 +164,12 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
         co_return;
     }
 
-    // Step 4: GET_MEASUREMENTS — request total measurement count.
-    // On-demand SignedMeasurements retrieval happens via the
+    // Step 4: GET_MEASUREMENTS is deferred to the on-demand
     // ComponentIntegrity.SPDMGetSignedMeasurements D-Bus method (from the
-    // 77349a9 commit), so eager attestation only proves the responder
-    // supports measurements without pulling them all.
-    uint32_t measurementRecordLength = 0;
-    std::vector<uint8_t> measurementRecord(LIBSPDM_MAX_MEASUREMENT_RECORD_SIZE);
-    uint8_t numberOfBlocks = 0;
-    status = libspdm_get_measurement(
-        transport->spdmContext, nullptr, 0,
-        SPDM_GET_MEASUREMENTS_REQUEST_MEASUREMENT_OPERATION_TOTAL_NUMBER_OF_MEASUREMENTS,
-        0, 0, &numberOfBlocks, &measurementRecordLength,
-        measurementRecord.data());
-    if (LIBSPDM_STATUS_IS_ERROR(status))
-    {
-        error("attestation FAILED for device {ID}: "
-              "GET_MEASUREMENTS status {STATUS}",
-              "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
-        componentIntegrity->responder_verification_status(
-            VerificationStatus::Failed);
-        co_return;
-    }
+    // 77349a9 commit), which is the path Redfish clients use. Eager
+    // attestation does not need to fetch measurements; CHALLENGE already
+    // proves the responder's identity, and the on-demand path knows the
+    // correct measurement-record framing for libspdm 3.8.2.
 
     // Step 5: Update both D-Bus surfaces on success.
     // MCTP responder = Integrated, TCP responder = Discrete.
@@ -203,9 +187,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     componentIntegrity->responder_verification_status(
         VerificationStatus::Success);
 
-    info("attestation PASSED for device {ID}: SPDM {VERSION}, {BLOCKS} "
-         "measurement blocks",
-         "ID", deviceName, "VERSION", versionStr, "BLOCKS", numberOfBlocks);
+    info("attestation PASSED for device {ID}: SPDM {VERSION}", "ID",
+         deviceName, "VERSION", versionStr);
     co_return;
 }
 
