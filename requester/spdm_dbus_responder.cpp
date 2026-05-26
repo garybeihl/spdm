@@ -93,8 +93,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
         libspdm_init_connection(transport->spdmContext, false);
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error("attestation FAILED for device {ID}: VCA status 0x{STATUS:X}",
-              "ID", deviceName, "STATUS", static_cast<unsigned>(status));
+        error("attestation FAILED for device {ID}: VCA status {STATUS}",
+              "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -122,14 +122,14 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error(
-            "attestation FAILED for device {ID}: GET_DIGESTS status 0x{STATUS:X}",
-            "ID", deviceName, "STATUS", static_cast<unsigned>(status));
+            "attestation FAILED for device {ID}: GET_DIGESTS status {STATUS}",
+            "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
     }
-    info("GET_DIGESTS for device {ID}: slotMask=0x{MASK:X}", "ID", deviceName,
-         "MASK", static_cast<unsigned>(slotMask));
+    info("GET_DIGESTS for device {ID}: slotMask={MASK}", "ID", deviceName,
+         "MASK", lg2::hex, static_cast<unsigned>(slotMask));
 
     // Step 3: GET_CERTIFICATE slot 0
     std::vector<uint8_t> certChain(LIBSPDM_MAX_CERT_CHAIN_SIZE);
@@ -139,8 +139,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error("attestation FAILED for device {ID}: "
-              "GET_CERTIFICATE status 0x{STATUS:X}",
-              "ID", deviceName, "STATUS", static_cast<unsigned>(status));
+              "GET_CERTIFICATE status {STATUS}",
+              "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -157,8 +157,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error(
-            "attestation FAILED for device {ID}: CHALLENGE status 0x{STATUS:X}",
-            "ID", deviceName, "STATUS", static_cast<unsigned>(status));
+            "attestation FAILED for device {ID}: CHALLENGE status {STATUS}",
+            "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -180,8 +180,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error("attestation FAILED for device {ID}: "
-              "GET_MEASUREMENTS status 0x{STATUS:X}",
-              "ID", deviceName, "STATUS", static_cast<unsigned>(status));
+              "GET_MEASUREMENTS status {STATUS}",
+              "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
