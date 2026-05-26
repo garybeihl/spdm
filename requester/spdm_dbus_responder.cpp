@@ -68,7 +68,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
 
     if (!transport)
     {
-        error("Attestation skipped for device {ID}: no transport (non-MCTP "
+        error("attestation skipped for device {ID}: no transport (non-MCTP "
               "transports are not yet implemented in this branch)",
               "ID", deviceName);
         componentIntegrity->responder_verification_status(
@@ -82,7 +82,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     // on-wire GET_VERSION + GET_CAPABILITIES + NEGOTIATE_ALGORITHMS exchange.
     if (!transport->initialize())
     {
-        error("Attestation FAILED for device {ID}: transport init failed",
+        error("attestation FAILED for device {ID}: transport init failed",
               "ID", deviceName);
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
@@ -93,7 +93,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
         libspdm_init_connection(transport->spdmContext, false);
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error("Attestation FAILED for device {ID}: VCA status 0x{STATUS:x}",
+        error("attestation FAILED for device {ID}: VCA status 0x{STATUS:x}",
               "ID", deviceName, "STATUS", status);
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
@@ -122,7 +122,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error(
-            "Attestation FAILED for device {ID}: GET_DIGESTS status 0x{STATUS:x}",
+            "attestation FAILED for device {ID}: GET_DIGESTS status 0x{STATUS:x}",
             "ID", deviceName, "STATUS", status);
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
@@ -136,7 +136,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
                                      &certChainSize, certChain.data());
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error("Attestation FAILED for device {ID}: "
+        error("attestation FAILED for device {ID}: "
               "GET_CERTIFICATE status 0x{STATUS:x}",
               "ID", deviceName, "STATUS", status);
         componentIntegrity->responder_verification_status(
@@ -155,7 +155,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error(
-            "Attestation FAILED for device {ID}: CHALLENGE status 0x{STATUS:x}",
+            "attestation FAILED for device {ID}: CHALLENGE status 0x{STATUS:x}",
             "ID", deviceName, "STATUS", status);
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
@@ -177,7 +177,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
         measurementRecord.data());
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error("Attestation FAILED for device {ID}: "
+        error("attestation FAILED for device {ID}: "
               "GET_MEASUREMENTS status 0x{STATUS:x}",
               "ID", deviceName, "STATUS", status);
         componentIntegrity->responder_verification_status(
@@ -201,7 +201,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     componentIntegrity->responder_verification_status(
         VerificationStatus::Success);
 
-    info("Attestation PASSED for device {ID}: SPDM {VERSION}, {BLOCKS} "
+    info("attestation PASSED for device {ID}: SPDM {VERSION}, {BLOCKS} "
          "measurement blocks",
          "ID", deviceName, "VERSION", versionStr, "BLOCKS", numberOfBlocks);
     co_return;
