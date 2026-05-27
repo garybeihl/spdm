@@ -53,29 +53,6 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
         componentIntegrity->setTransport(transport);
     }
 
-    // ComponentIntegrity multi-inherits from three separate aserver server_t
-    // bases (ComponentIntegrity, MeasurementSet, IdentityAuthentication), one
-    // per interface. Each base registers its interface independently with
-    // sd-bus, but none of them auto-emit org.freedesktop.DBus.ObjectManager
-    // InterfacesAdded at construction time. Without an explicit emit, the
-    // phosphor-mapper sees only whichever interface gets implicitly touched
-    // first (e.g. via a method dispatch), which makes bmcweb's
-    // GET /redfish/v1/ComponentIntegrity collection enumeration miss our
-    // objects while POST to per-id Action endpoints still works.
-    //
-    // Emit InterfacesAdded explicitly on each base so the mapper sees all
-    // three interfaces atomically. Uses fully-qualified base names to
-    // disambiguate emit_added among the inherited bases.
-    using CIBase = sdbusplus::aserver::xyz::openbmc_project::attestation::
-        ComponentIntegrity<spdm::ComponentIntegrity, void>;
-    using MSBase = sdbusplus::aserver::xyz::openbmc_project::attestation::
-        MeasurementSet<spdm::ComponentIntegrity, void>;
-    using IABase = sdbusplus::aserver::xyz::openbmc_project::attestation::
-        IdentityAuthentication<spdm::ComponentIntegrity, void>;
-    static_cast<CIBase*>(componentIntegrity.get())->emit_added();
-    static_cast<MSBase*>(componentIntegrity.get())->emit_added();
-    static_cast<IABase*>(componentIntegrity.get())->emit_added();
-
     std::string trustedComponentPath =
         "/xyz/openbmc_project/inventory/trusted_component/" + deviceName;
     trustedComponent = std::make_unique<TrustedComponent>(asyncCtx.get_bus(),
