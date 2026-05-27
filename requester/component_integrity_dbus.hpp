@@ -38,11 +38,12 @@ class ComponentIntegrityTest;
  *    xyz.openbmc_project.Attestation.MeasurementSet DBus API
  */
 class ComponentIntegrity :
-    public sdbusplus::async::server_t<
-        ComponentIntegrity,
-        sdbusplus::aserver::xyz::openbmc_project::attestation::ComponentIntegrity,
-        sdbusplus::aserver::xyz::openbmc_project::attestation::MeasurementSet,
-        sdbusplus::aserver::xyz::openbmc_project::attestation::IdentityAuthentication>
+    public sdbusplus::aserver::xyz::openbmc_project::attestation::
+        ComponentIntegrity<ComponentIntegrity, void>,
+    public sdbusplus::aserver::xyz::openbmc_project::attestation::
+        MeasurementSet<ComponentIntegrity, void>,
+    public sdbusplus::aserver::xyz::openbmc_project::attestation::
+        IdentityAuthentication<ComponentIntegrity, void>
 {
   public:
     ComponentIntegrity() = delete;
@@ -55,31 +56,15 @@ class ComponentIntegrity :
      * @brief Construct a new ComponentIntegrity from a bus reference
      * @param ctx Async context for D-Bus operations
      * @param path Object path for this component
-     *
-     * Uses the integrated sdbusplus::async::server_t<Instance, Iface...>
-     * pattern so all three interfaces (ComponentIntegrity, MeasurementSet,
-     * IdentityAuthentication) register atomically against a single bus
-     * connection and appear together in the org.freedesktop.DBus.Introspectable
-     * Introspect XML. This is required for phosphor-mapper to index all three
-     * interfaces on the object so bmcweb's Redfish collection enumeration at
-     * /redfish/v1/ComponentIntegrity finds it via a getSubTree query filtered
-     * on the ComponentIntegrity interface.
-     *
-     * The previous pattern (multi-inheritance of single-interface server_t<>
-     * instances via Server=void on each base) registered each interface to a
-     * separate bus context, with the result that introspection XML only
-     * surfaced one interface — breaking Redfish collection lookups while
-     * leaving per-id Action POST endpoints (which happen to query a different
-     * interface) working.
      */
     ComponentIntegrity(sdbusplus::async::context& ctx,
                        const std::string& path) :
-        sdbusplus::async::server_t<
-            ComponentIntegrity,
-            sdbusplus::aserver::xyz::openbmc_project::attestation::ComponentIntegrity,
-            sdbusplus::aserver::xyz::openbmc_project::attestation::MeasurementSet,
-            sdbusplus::aserver::xyz::openbmc_project::attestation::IdentityAuthentication>(
-            ctx, path.c_str()),
+        sdbusplus::aserver::xyz::openbmc_project::attestation::
+            ComponentIntegrity<ComponentIntegrity, void>(ctx, path.c_str()),
+        sdbusplus::aserver::xyz::openbmc_project::attestation::MeasurementSet<
+            ComponentIntegrity, void>(ctx, path.c_str()),
+        sdbusplus::aserver::xyz::openbmc_project::attestation::
+            IdentityAuthentication<ComponentIntegrity, void>(ctx, path.c_str()),
         path(path), asyncCtx(ctx)
     {
         initializeProperties();
