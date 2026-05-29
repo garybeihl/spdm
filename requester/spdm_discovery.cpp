@@ -37,7 +37,23 @@ auto SPDMDiscovery::run() -> sdbusplus::async::task<>
 
 void SPDMDiscovery::add(ResponderInfo&& r, bool isRuntimeDiscovered)
 {
-    // Always add to the vector first to maintain the list of discovered devices
+    PHOSPHOR_LOG2_USING;
+
+    // Dedup. The same D-Bus path can arrive via both the initial mapper
+    // sweep and a runtime InterfacesAdded signal, or via a matcher that
+    // fires more than once for the same object. Without this guard each
+    // call would spawn a fresh per-device coroutine racing on the same
+    // MCTP socket.
+    for (const auto& existing : responderInfos)
+    {
+        if (existing.path == r.path)
+        {
+            debug("SPDMDiscovery: ignoring duplicate add for {PATH}", "PATH",
+                  r.path);
+            return;
+        }
+    }
+
     responderInfos.emplace_back(std::move(r));
 
     if (isRuntimeDiscovered && responderManager)
