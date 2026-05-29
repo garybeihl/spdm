@@ -25,10 +25,16 @@ if not libspdm_dep.found()
     cpp = meson.get_compiler('cpp')
     libspdm_common = cpp.find_library('spdm_common_lib', required: false)
     libspdm_requester = cpp.find_library('spdm_requester_lib', required: false)
-    libspdm_transport_mctp = cpp.find_library('spdm_transport_mctp_lib', required: false)
+    libspdm_transport_mctp = cpp.find_library(
+        'spdm_transport_mctp_lib',
+        required: false,
+    )
     libspdm_crypt = cpp.find_library('spdm_crypt_lib', required: false)
     libspdm_crypt_ext = cpp.find_library('spdm_crypt_ext_lib', required: false)
-    libspdm_secured_message = cpp.find_library('spdm_secured_message_lib', required: false)
+    libspdm_secured_message = cpp.find_library(
+        'spdm_secured_message_lib',
+        required: false,
+    )
     libcryptlib_openssl = cpp.find_library('cryptlib_openssl', required: false)
     libmemlib = cpp.find_library('memlib', required: false)
     libmalloclib = cpp.find_library('malloclib', required: false)

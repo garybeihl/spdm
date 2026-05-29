@@ -1,3 +1,13 @@
 option('tests', type: 'feature', value: 'enabled', description: 'Build tests')
-option('coverage', type: 'boolean', value: false, description: 'Enable code coverage')
-option('libspdm-includedir', type: 'string', value: '', description: 'libspdm header include path')
+option(
+    'coverage',
+    type: 'boolean',
+    value: false,
+    description: 'Enable code coverage',
+)
+option(
+    'libspdm-includedir',
+    type: 'string',
+    value: '',
+    description: 'libspdm header include path',
+)
