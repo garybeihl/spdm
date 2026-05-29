@@ -53,10 +53,34 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
         componentIntegrity->setTransport(transport);
     }
 
+    // ComponentIntegrity multi-inherits from three separate aserver server_t
+    // bases (ComponentIntegrity, MeasurementSet, IdentityAuthentication), one
+    // per interface. The bases register their interfaces with sd-bus but do
+    // not auto-emit org.freedesktop.DBus.ObjectManager.InterfacesAdded at
+    // construction. bmcweb's per-id GET /redfish/v1/ComponentIntegrity/<id>
+    // handler requires all three interfaces visible via getSubTree, which is
+    // satisfied for boot-time objects (mapper has time to scan introspection
+    // XML) but races for runtime-added objects when bmcweb queries shortly
+    // after construction.
+    //
+    // Explicitly emit InterfacesAdded on each base, fully-qualified to
+    // disambiguate emit_added among the inherited bases, so the mapper sees
+    // all three atomically as soon as the object is constructed.
+    using CIBase = sdbusplus::aserver::xyz::openbmc_project::attestation::
+        ComponentIntegrity<spdm::ComponentIntegrity, void>;
+    using MSBase =
+        sdbusplus::aserver::xyz::openbmc_project::attestation::MeasurementSet<
+            spdm::ComponentIntegrity, void>;
+    using IABase = sdbusplus::aserver::xyz::openbmc_project::attestation::
+        IdentityAuthentication<spdm::ComponentIntegrity, void>;
+    static_cast<CIBase*>(componentIntegrity.get())->emit_added();
+    static_cast<MSBase*>(componentIntegrity.get())->emit_added();
+    static_cast<IABase*>(componentIntegrity.get())->emit_added();
+
     std::string trustedComponentPath =
         "/xyz/openbmc_project/inventory/trusted_component/" + deviceName;
-    trustedComponent = std::make_unique<TrustedComponent>(asyncCtx.get_bus(),
-                                                          trustedComponentPath);
+    trustedComponent = std::make_unique<TrustedComponent>(
+        asyncCtx.get_bus(), trustedComponentPath);
 
     info("Created SPDM D-Bus responder for device {ID} at {PATH}", "ID",
          deviceName, "PATH", responderInfo.path);
@@ -82,8 +106,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     // on-wire GET_VERSION + GET_CAPABILITIES + NEGOTIATE_ALGORITHMS exchange.
     if (!transport->initialize())
     {
-        error("attestation FAILED for device {ID}: transport init failed",
-              "ID", deviceName);
+        error("attestation FAILED for device {ID}: transport init failed", "ID",
+              deviceName);
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -93,8 +117,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
         libspdm_init_connection(transport->spdmContext, false);
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error("attestation FAILED for device {ID}: VCA status {STATUS}",
-              "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
+        error("attestation FAILED for device {ID}: VCA status {STATUS}", "ID",
+              deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -121,9 +145,9 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
                                 digestBuffer.data());
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error(
-            "attestation FAILED for device {ID}: GET_DIGESTS status {STATUS}",
-            "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
+        error("attestation FAILED for device {ID}: GET_DIGESTS status {STATUS}",
+              "ID", deviceName, "STATUS", lg2::hex,
+              static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -140,7 +164,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     {
         error("attestation FAILED for device {ID}: "
               "GET_CERTIFICATE status {STATUS}",
-              "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
+              "ID", deviceName, "STATUS", lg2::hex,
+              static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -156,9 +181,9 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
                                nullptr);
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
-        error(
-            "attestation FAILED for device {ID}: CHALLENGE status {STATUS}",
-            "ID", deviceName, "STATUS", lg2::hex, static_cast<unsigned>(status));
+        error("attestation FAILED for device {ID}: CHALLENGE status {STATUS}",
+              "ID", deviceName, "STATUS", lg2::hex,
+              static_cast<unsigned>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         co_return;
@@ -187,8 +212,8 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
     componentIntegrity->responder_verification_status(
         VerificationStatus::Success);
 
-    info("attestation PASSED for device {ID}: SPDM {VERSION}", "ID",
-         deviceName, "VERSION", versionStr);
+    info("attestation PASSED for device {ID}: SPDM {VERSION}", "ID", deviceName,
+         "VERSION", versionStr);
     co_return;
 }
 
