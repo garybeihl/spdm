@@ -6,40 +6,12 @@ test_deps = [
     libspdm_dep,
 ]
 
-<<<<<<< HEAD
 tests = [
     'test_mctp_transport_discovery',
     'test_spdm_discovery',
     'test_policy_manager',
 ]
 
-=======
-# Common source files needed by multiple tests
-common_src = [
-    'test_mctp_transport_discovery.cpp',
-    'test_mctp_helper.cpp',
-    'test_component_integrity.cpp',
-    'test_certificate_dbus.cpp',
-    'mock_libspdm.cpp',
-    '../requester/mctp_transport_discovery.cpp',
-    '../requester/spdm_discovery.cpp',
-    '../requester/utils/mapper.cpp',
-    '../requester/libspdm_mctp_transport.cpp',
-    '../requester/spdm_device_secret_lib_stub.cpp',
-    '../requester/component_integrity_dbus.cpp',
-    '../requester/certificate_dbus.cpp',
-]
-
-# Define test executables
-tests = [
-    'mctp_transport_discovery',
-    'mctp_helper',
-    'component_integrity',
-    'certificate_dbus',
-]
-
-# Build and register each test
->>>>>>> 7f03cd4 (spdmd: Implement Digest)
 foreach t : tests
     test(
         t,
