@@ -29,6 +29,10 @@ if not libspdm_dep.found()
         'spdm_transport_mctp_lib',
         required: false,
     )
+    libspdm_transport_tcp = cpp.find_library(
+        'spdm_transport_tcp_lib',
+        required: false,
+    )
     libspdm_crypt = cpp.find_library('spdm_crypt_lib', required: false)
     libspdm_crypt_ext = cpp.find_library('spdm_crypt_ext_lib', required: false)
     libspdm_secured_message = cpp.find_library(
@@ -55,6 +59,7 @@ if not libspdm_dep.found()
                 libspdm_common,
                 libspdm_requester,
                 libspdm_transport_mctp,
+                libspdm_transport_tcp,
                 libspdm_crypt,
                 libspdm_crypt_ext,
                 libspdm_secured_message,

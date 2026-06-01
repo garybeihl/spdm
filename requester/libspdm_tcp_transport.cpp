@@ -3,9 +3,21 @@
 
 #include "libspdm_tcp_transport.hpp"
 
+// Forward declarations: the libspdm install at /usr/local/include/libspdm/
+// in the Docker CI image does not ship library/spdm_transport_tcp_lib.h,
+// even though libspdm's CMake builds spdm_transport_tcp_lib unconditionally
+// (CMakeLists.txt:996, 1035).  The static archive should expose the symbols.
 extern "C"
 {
-#include "library/spdm_transport_tcp_lib.h"
+libspdm_return_t libspdm_transport_tcp_encode_message(
+    void* spdm_context, const uint32_t* session_id, bool is_app_message,
+    bool is_requester, size_t message_size, void* message,
+    size_t* transport_message_size, void** transport_message);
+
+libspdm_return_t libspdm_transport_tcp_decode_message(
+    void* spdm_context, uint32_t** session_id, bool* is_app_message,
+    bool is_requester, size_t transport_message_size, void* transport_message,
+    size_t* message_size, void** message);
 }
 
 #include <phosphor-logging/lg2.hpp>
