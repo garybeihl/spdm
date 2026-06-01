@@ -39,19 +39,22 @@ void SPDMDiscovery::add(ResponderInfo&& r, bool isRuntimeDiscovered)
 {
     PHOSPHOR_LOG2_USING;
 
-    // Dedup. The same D-Bus path can arrive via both the initial mapper
-    // sweep and a runtime InterfacesAdded signal, or via a matcher that
-    // fires more than once for the same object. Without this guard each
-    // call would spawn a fresh per-device coroutine racing on the same
-    // MCTP socket.
-    for (const auto& existing : responderInfos)
+    // Delete-recreate: if the same D-Bus path arrives again (e.g., via
+    // a runtime InterfacesAdded signal after the initial mapper sweep,
+    // or via a matcher that re-fires for the same object), replace
+    // the existing entry rather than ignoring the new one.  A re-add
+    // may represent a fresh device state — firmware update, reset, or
+    // a compromise scenario — that should not inherit cached
+    // attestation state.  Force fresh attestation every time, even at
+    // the cost of re-attesting an unchanged device.
+    auto path = r.path;
+    auto wasReplaced = std::erase_if(responderInfos, [&path](const auto& e) {
+        return e.path == path;
+    });
+    if (wasReplaced > 0)
     {
-        if (existing.path == r.path)
-        {
-            debug("SPDMDiscovery: ignoring duplicate add for {PATH}", "PATH",
-                  r.path);
-            return;
-        }
+        debug("SPDMDiscovery: replacing existing entry for {PATH}", "PATH",
+              path);
     }
 
     responderInfos.emplace_back(std::move(r));
