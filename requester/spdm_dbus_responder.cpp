@@ -189,12 +189,46 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
         co_return;
     }
 
-    // Step 4: GET_MEASUREMENTS is deferred to the on-demand
-    // ComponentIntegrity.SPDMGetSignedMeasurements D-Bus method (from the
-    // 77349a9 commit), which is the path Redfish clients use. Eager
-    // attestation does not need to fetch measurements; CHALLENGE already
-    // proves the responder's identity, and the on-demand path knows the
-    // correct measurement-record framing for libspdm 3.8.2.
+    // Step 4: GET_MEASUREMENTS — fetch the responder's measurement
+    // state at eager-attestation time.  SPDMGetSignedMeasurements
+    // belongs in the eager attestation path alongside the on-demand
+    // ComponentIntegrity D-Bus method from commit 77349a9 — so that
+    // measurement retrieval succeeds at attestation time, not only
+    // when a Redfish client later queries it.
+    //
+    // Use measurement_operation = 0xFF to request all measurement
+    // blocks in a single libspdm call, matching the on-demand path's
+    // default behavior (indicesToProcess = {255}).
+    {
+        constexpr uint8_t allBlocksOperation = 0xFF;
+        constexpr uint8_t slotId = 0;
+        constexpr uint8_t requestAttribute = 0;
+        constexpr size_t maxMeasurementSize = 4096;
+        std::vector<uint8_t> measurementBuffer(maxMeasurementSize);
+        uint32_t measurementSize = measurementBuffer.size();
+        uint8_t contentChanged = 0;
+        uint8_t numberOfBlocks = 0;
+
+        status = libspdm_get_measurement(
+            transport->spdmContext,
+            nullptr, // No session
+            requestAttribute, allBlocksOperation, slotId, &contentChanged,
+            &numberOfBlocks, &measurementSize, measurementBuffer.data());
+        if (LIBSPDM_STATUS_IS_ERROR(status))
+        {
+            error("attestation FAILED for device {ID}: "
+                  "GET_MEASUREMENTS status {STATUS}",
+                  "ID", deviceName, "STATUS", lg2::hex,
+                  static_cast<unsigned>(status));
+            componentIntegrity->responder_verification_status(
+                VerificationStatus::Failed);
+            co_return;
+        }
+
+        info("GET_MEASUREMENTS for device {ID}: {COUNT} blocks, {SIZE} bytes",
+             "ID", deviceName, "COUNT", static_cast<unsigned>(numberOfBlocks),
+             "SIZE", measurementSize);
+    }
 
     // Step 5: Update both D-Bus surfaces on success.
     // MCTP responder = Integrated, TCP responder = Discrete.
