@@ -107,7 +107,7 @@ executable(
 )
 
 # Test subdirectory
-if get_option('tests')
+if get_option('tests').allowed()
     subdir('tests')
 endif
 
