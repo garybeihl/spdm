@@ -4,6 +4,7 @@
 #include "spdm_dbus_responder.hpp"
 
 #include "libspdm_mctp_transport.hpp"
+#include "libspdm_tcp_transport.hpp"
 
 extern "C"
 {
@@ -36,6 +37,12 @@ SPDMDBusResponder::SPDMDBusResponder(sdbusplus::async::context& ctx,
             {
                 deviceName = std::to_string(responder.eid);
                 transport = std::make_shared<SpdmMctpTransport>(responder.eid);
+            }
+            else if constexpr (std::is_same_v<T, TcpResponderInfo>)
+            {
+                deviceName = responder.ipAddr;
+                transport = std::make_shared<SpdmTcpTransport>(
+                    responder.ipAddr, static_cast<uint16_t>(responder.port));
             }
             else
             {
@@ -92,8 +99,7 @@ auto SPDMDBusResponder::run() -> sdbusplus::async::task<>
 
     if (!transport)
     {
-        error("attestation skipped for device {ID}: no transport (non-MCTP "
-              "transports are not yet implemented in this branch)",
+        error("attestation skipped for device {ID}: no transport instantiated",
               "ID", deviceName);
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
