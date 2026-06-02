@@ -132,18 +132,25 @@ bool SPDMDBusResponder::performEagerAttestation()
     componentIntegrity->type_version(versionStr);
 
     // Step 2: GET_DIGESTS
+    // Buffer must be LIBSPDM_MAX_SLOT_COUNT * LIBSPDM_MAX_HASH_SIZE so
+    // libspdm can fill in slot-positioned digests for whatever hash
+    // algorithm was negotiated (SHA-256 = 32B, SHA-384 = 48B,
+    // SHA-512 = 64B per slot).  The previous hardcoded 48B per slot
+    // matched SHA-384 but undersized for SHA-512; in practice libspdm
+    // writes only negotiated-hashlen bytes per slot so SHA-256 still
+    // fits, but defending against the SHA-512 case is correct.
     uint8_t slotMask = 0;
-    constexpr size_t digestSize = 48;
-    constexpr size_t maxSlots = 8;
-    std::vector<uint8_t> digestBuffer(maxSlots * digestSize);
+    std::vector<uint8_t> digestBuffer(SPDM_MAX_SLOT_COUNT *
+                                      LIBSPDM_MAX_HASH_SIZE);
 
     status = libspdm_get_digest(transport->spdmContext, nullptr, &slotMask,
                                 digestBuffer.data());
     if (LIBSPDM_STATUS_IS_ERROR(status))
     {
         error("Eager attestation FAILED for device {ID}: "
-              "GET_DIGESTS failed, status 0x{STATUS:x}",
-              "ID", deviceName, "STATUS", status);
+              "GET_DIGESTS failed, status 0x{STATUS}",
+              "ID", deviceName, "STATUS", lg2::hex,
+              static_cast<uint32_t>(status));
         componentIntegrity->responder_verification_status(
             VerificationStatus::Failed);
         return false;
