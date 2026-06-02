@@ -154,6 +154,19 @@ bool SpdmTcpTransport::configureContext()
     libspdm_set_data(spdmContext, LIBSPDM_DATA_SPDM_VERSION, &parameter,
                      versions, sizeof(versions));
 
+    // Requester capabilities: certificate retrieval and challenge.
+    // Mirrors the MCTP transport setup — previously omitted on the TCP
+    // path, which left LIBSPDM_DATA_CAPABILITY_FLAGS = 0.  A
+    // permissive responder (e.g. the in-process Renode responder) would
+    // still complete attestation, but a strict DMTF spdm_responder_emu
+    // returns SPDM ERROR (mapped by libspdm to BUFFER_TOO_SMALL) at
+    // GET_DIGESTS because the responder sees no advertised
+    // requester-side CERT_CAP and refuses to send digests.
+    uint32_t capFlags = SPDM_GET_CAPABILITIES_REQUEST_FLAGS_CERT_CAP |
+                        SPDM_GET_CAPABILITIES_REQUEST_FLAGS_CHAL_CAP;
+    libspdm_set_data(spdmContext, LIBSPDM_DATA_CAPABILITY_FLAGS, &parameter,
+                     &capFlags, sizeof(capFlags));
+
     // Set capability exponent
     uint8_t data8 = 0;
     libspdm_set_data(spdmContext, LIBSPDM_DATA_CAPABILITY_CT_EXPONENT,
@@ -173,6 +186,13 @@ bool SpdmTcpTransport::configureContext()
     data32 = supportHashAlgo;
     libspdm_set_data(spdmContext, LIBSPDM_DATA_BASE_HASH_ALGO, &parameter,
                      &data32, sizeof(data32));
+
+    // Set measurement hash algorithm.  Also previously omitted on the
+    // TCP path; required for signed GET_MEASUREMENTS to negotiate a
+    // hash compatible with the responder's measurement-block hashing.
+    data32 = supportMeasurementHashAlgo;
+    libspdm_set_data(spdmContext, LIBSPDM_DATA_MEASUREMENT_HASH_ALGO,
+                     &parameter, &data32, sizeof(data32));
 
     lg2::debug("SPDM context configured");
     return true;
