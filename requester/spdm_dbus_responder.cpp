@@ -179,6 +179,44 @@ bool SPDMDBusResponder::performEagerAttestation()
         return false;
     }
 
+    // Step 5: GET_MEASUREMENTS with signature — the headline SPDM 1.2
+    // attestation value-add.  The responder hashes its measurement
+    // blocks (boot ROM, runtime firmware, etc.), signs the hash with
+    // its private key, and returns the measurement record + signature.
+    // libspdm verifies the signature against the cert chain from Step 3.
+    //
+    // Request all measurement blocks in one call (operation = 0xFF)
+    // with signature attribute set; slot 0 matches the cert we fetched.
+    {
+        constexpr uint8_t allBlocksOperation = 0xFF;
+        constexpr uint8_t slotId = 0;
+        constexpr uint8_t requestAttributeSigned =
+            SPDM_GET_MEASUREMENTS_REQUEST_ATTRIBUTES_GENERATE_SIGNATURE;
+        constexpr uint32_t maxMeasurementSize = 4096;
+        std::vector<uint8_t> measurementBuffer(maxMeasurementSize);
+        uint32_t measurementSize = measurementBuffer.size();
+        uint8_t contentChanged = 0;
+        uint8_t numberOfBlocks = 0;
+
+        status = libspdm_get_measurement(
+            transport->spdmContext, nullptr, requestAttributeSigned,
+            allBlocksOperation, slotId, &contentChanged, &numberOfBlocks,
+            &measurementSize, measurementBuffer.data());
+        if (LIBSPDM_STATUS_IS_ERROR(status))
+        {
+            error("Eager attestation FAILED for device {ID}: "
+                  "Signed GET_MEASUREMENTS failed, status 0x{STATUS:x}",
+                  "ID", deviceName, "STATUS", status);
+            componentIntegrity->responder_verification_status(
+                VerificationStatus::Failed);
+            return false;
+        }
+        info("Signed GET_MEASUREMENTS for device {ID}: {COUNT} blocks, "
+             "{SIZE} bytes",
+             "ID", deviceName, "COUNT", numberOfBlocks, "SIZE",
+             measurementSize);
+    }
+
     info("Eager attestation PASSED for device {ID}, SPDM version {VERSION}",
          "ID", deviceName, "VERSION", versionStr);
     componentIntegrity->responder_verification_status(
