@@ -138,19 +138,21 @@ bool SpdmTcpTransport::setupScratchBuffer()
 
 bool SpdmTcpTransport::configureContext()
 {
-    // Set SPDM version if specified
-    if (useVersion != 0)
-    {
-        spdm_version_number_t spdmVersion;
-        libspdm_zero_mem(&parameter, sizeof(parameter));
-        parameter.location = LIBSPDM_DATA_LOCATION_LOCAL;
-        spdmVersion = useVersion << SPDM_VERSION_NUMBER_SHIFT_BIT;
-        libspdm_set_data(spdmContext, LIBSPDM_DATA_SPDM_VERSION, &parameter,
-                         &spdmVersion, sizeof(spdmVersion));
-    }
-
     libspdm_zero_mem(&parameter, sizeof(parameter));
     parameter.location = LIBSPDM_DATA_LOCATION_LOCAL;
+
+    // Register all supported SPDM versions so libspdm negotiates the
+    // highest common version with the responder.  Matches the MCTP
+    // transport's setup; the previous single-value registration via
+    // useVersion silently capped TCP attestation at SPDM 1.1 even when
+    // both ends supported 1.2.
+    spdm_version_number_t versions[] = {
+        SPDM_MESSAGE_VERSION_10 << SPDM_VERSION_NUMBER_SHIFT_BIT,
+        SPDM_MESSAGE_VERSION_11 << SPDM_VERSION_NUMBER_SHIFT_BIT,
+        SPDM_MESSAGE_VERSION_12 << SPDM_VERSION_NUMBER_SHIFT_BIT,
+    };
+    libspdm_set_data(spdmContext, LIBSPDM_DATA_SPDM_VERSION, &parameter,
+                     versions, sizeof(versions));
 
     // Set capability exponent
     uint8_t data8 = 0;
